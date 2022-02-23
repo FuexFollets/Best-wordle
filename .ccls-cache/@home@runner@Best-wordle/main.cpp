@@ -1,14 +1,4 @@
-#include <iostream>
-#include <fstream>
-#include <array>
-#include <string>
-#include <unordered_map>
-#include <unordered_set>
-#include <set>
-#include <algorithm>
-#include <vector>
-#include <iterator>
-#include <cstdlib>
+#include <bits/stdc++.h>
 
 constexpr std::array<char*, 3> accuracy_boxes{"🟩", "🟧", "⬛"};
 
@@ -38,43 +28,57 @@ template <typename T> class map_set {
     }
 };
 
-template <typename T> map_set<std::string> filter_f(std::ifstream& inp_stream, T fn) {
-  map_set<std::string> filtered;
+template <typename T, typename U>
+bool has_key(std::unordered_map<T, U> map, T key) {
+  return map.find(key) != map.end();
+}
+
+
+template <typename T>
+bool has_value(std::unordered_set<T> set, T value) {
+  return set.find(value) != set.end();
+}
+
+//
+// File Filter Functions
+//
+
+template <typename T> std::unordered_set<std::string> filter_f(std::ifstream& inp_stream, T fn) {
+  std::unordered_set<std::string> filtered;
   std::string temp;
   while (std::getline(inp_stream, temp)) {
-    if (fn(temp)) { filtered.append(temp); }
+    if (fn(temp)) { filtered.insert(temp); }
   }
   return filtered;
 }
 
-template <typename T> std::ostream& operator<< (std::ostream& out, const std::vector<T> vect) {
-  out << "[ ";
-  for (const T& obj: vect) {
-    out << obj << ' ';
+bool valid_word(std::ifstream& word_file, std::string tested_word) {
+  std::string temp;
+  while (std::getline(word_file, temp)) {
+    if (tested_word == temp) {
+      return true;
+    }
   }
-  out << ']';
+  return false;
+}
+
+template <typename T> std::ostream& operator<< (std::ostream& out, std::unordered_set<T> container) {
+  out << "{ ";
+  for (const T& val: container) out << val << ", ";
+  out << '}';
   return out;
 }
 
-template <typename T> std::ostream& operator<< (std::ostream& out, const std::set<T> set_obj) {
+
+template <typename T, typename U> std::ostream& operator<< (std::ostream& out, std::unordered_map<T, U> container) {
   out << "{ ";
-  for (const T& obj: set_obj) out << obj << ' ';
-  out << '}';
+  for (const auto&[key, val]: container) out << key << ": " << val << ", ";
+  out << "}";
+  return out;
 }
-
-struct W_letter {
-  W_letter(char lett, uint8_t acc) : letter(lett), accuracy(acc) {}
-  W_letter () {}
-  char letter{32};
-  uint8_t accuracy{2};
-
-  friend std::ostream& operator<< (std::ostream&, W_letter);
-};
-
-std::ostream& operator<< (std::ostream& out, W_letter wl) {
-    out << '[' << (char)wl.letter << accuracy_boxes[(int)wl.accuracy] << (int)wl.accuracy << ']';
-    return out;
-  }
+//
+// Word Intersection logical functions
+//
 
 std::string common(std::string s1, std::string s2) {
   std::string common_chars;
@@ -100,23 +104,33 @@ std::array<std::string, 2> without(std::string s1, std::string s2) {
   
   return std::array<std::string, 2>({s1, s2});
 }
+ 
+
+//
+// Wordle Structre Elements
+//
+
+struct W_letter {
+  W_letter(char lett, uint8_t acc) : letter(lett), accuracy(acc) {}
+  W_letter () {}
+  char letter{32};
+  uint8_t accuracy{2};
+
+  friend std::ostream& operator<< (std::ostream& out, W_letter wl) {
+    out << '[' << (char)wl.letter << accuracy_boxes[(int)wl.accuracy] /*<< (int)wl.accuracy*/ << ']';
+    return out;
+  }
+};
 
 bool string_count(std::string str, char c) {
   return std::count(str.begin(), str.end(), c);
-}
-
-template <typename T> void insert_inc(std::unordered_map<T, int>& map_obj, T obj) {
-  if (map_obj.count(obj)) {
-    map_obj[obj] = 1;
-  } else {
-    map_obj[obj]++;
-  }
 }
 
 template <int len> struct W_word {
   std::string as_std_str;
   std::array<W_letter, len> w_letter_arr;
   bool solved{true};
+  bool valid{false};
 
   W_word(std::string word, std::string sol) : as_std_str(word) {
     std::string word_cpy{word};
@@ -149,7 +163,17 @@ template <int len> struct W_word {
     }
 
     for (const W_letter& wl: w_letter_arr) {
-      solved = solved && (bool)(!wl.accuracy);
+      solved = solved && !wl.accuracy;
+    }
+
+    
+  }
+
+  W_word(std::string word_as_str, std::array<int, len> acc_arr) : as_std_str(word_as_str) {
+    int ind{};
+    for (W_letter& wl: w_letter_arr) {
+      wl = W_letter(word_as_str[ind], acc_arr[ind]);
+      ind++;
     }
   }
 
@@ -161,54 +185,19 @@ template <int len> struct W_word {
     }
     return out;
   }
-
-  map_set<std::string> possibilites(std::ifstream& inp_stream) {
-    std::unordered_map<int, char> index_is;
-    std::unordered_map<int, char> index_is_not;
-    std::unordered_set<char> word_not_has;
-    std::unordered_map<char, int> word_l_count;
-    
-    for (int i{}; i < len; i++) {
-      W_letter& wl = w_letter_arr[i];
-      switch (wl.accuracy) {
-        case 0:
-          index_is[i] = wl.letter;
-          insert_inc(word_l_count, wl.letter);
-          break;
-        case 1:
-          index_is_not[i] = wl.letter;
-          insert_inc(word_l_count, wl.letter);
-          break;
-        case 2:
-          word_not_has.insert(wl.letter);
-          index_is_not[i] = wl.letter;
-          break;
-      }
-    }
-
-    return filter_f(inp_stream, [&](std::string word){
-      word = word.substr(0, len);
-      for (const auto&[c, amount]: word_l_count) {
-        if (string_count(word, c) <= amount) { return false; }
-      }
-      
-      for (int ind{}; ind < len; ind++) {
-        if (index_is.count(ind)) {
-          if (index_is.at(ind) != word[ind]) { return false; }
-        }
-        if (index_is_not.count(ind)) {
-          if (index_is_not.at(ind) == word[ind]) { return false; }
-        }
-      }
-
-      for (const char& c: word_not_has) {
-        if (string_count(word, c)) { return false; }
-      }
-      
-      return true;
-    });
-  }
 };
+
+template <int w_len> W_word<w_len> w_word_io() {
+    std::string inp;
+    std::array<int, w_len> acc_arr;
+    std::cout << "Input W_word as <word string><integer accuracies>: ";
+    std::getline(std::cin, inp);
+    std::string word_str{inp.substr(0, w_len)};
+    for (int ind{}; ind < w_len; ind++) {
+      acc_arr[ind] = inp[w_len + ind] - '0';
+    }
+    return W_word<w_len>(word_str, acc_arr);
+  }
 
 template <int Word_len, int Guesses = 6> class Wordle_game {
   
@@ -220,59 +209,91 @@ public:
   std::array<W_word<Word_len>, Guesses> word_container;
   Wordle_game(std::string solution) : _solution(solution) {}
 
+  static Wordle_game<Word_len> blank_g() {
+    return Wordle_game<Word_len>();
+  }
+
   void guess_word(std::string word) {
     if (appended == Guesses) { return; }
     word_container[appended++] = W_word<Word_len>(word, _solution);
     solved = solved || word_container[appended].solved;
   }
+  void guess_word(W_word<Word_len> word) {
+    if (appended == Guesses) { return; }
+    word_container[appended++] = word;
+    solved = solved || word_container[appended].solved;
+  }
 
-  map_set<std::string> possibilites(std::ifstream& inp_stream) {
+  std::unordered_set<std::string> possibilites(std::ifstream& inp_stream) {
     std::unordered_map<int, char> index_is;
-    std::unordered_map<int, char> index_is_not;
+    std::unordered_map<int, std::unordered_set<char>> index_is_not;
     std::unordered_set<char> word_not_has;
     std::unordered_map<char, int> word_l_count;
-
-    for (const W_word<Word_len>& wl_arr: word_container) {
-      for (int i{0}; i < Word_len; i++) {
-        W_letter& wl{wl_arr.w_letter_arr[i]};
+    
+    int iteration_number{0};
+    for (const W_word<Word_len>& word: word_container) {
+      std::unordered_map<char, int> lett_count;
+      const std::string& word_as_str{word.as_std_str};
+      
+      if (iteration_number++ == appended) { break; }
+      
+      for (int i{}; i < Word_len; i++) {
+        const W_letter& wl{word.w_letter_arr[i]};
+        const char& letter{wl.letter};
         switch (wl.accuracy) {
-          case 0:
-            index_is[i] = wl.letter;
-            insert_inc(word_l_count, wl.letter);
+          case 2:
+            index_is_not[i].insert(letter);
+            word_not_has.insert(letter);
             break;
           case 1:
-            index_is_not[i] = wl.letter;
-            insert_inc(word_l_count, wl.letter);
+            index_is_not[i].insert(letter);
+            lett_count[letter]++;
             break;
-          case 2:
-            word_not_has.insert(wl.letter);
-            index_is_not[i] = wl.letter;
-            break;
+          case 0:
+            index_is[i] = letter;
+            lett_count[letter]++;
         }
-      }
-    }
-    
-    return filter_f(inp_stream, [&](std::string word){
-      word = word.substr(0, Word_len);
-      for (const auto&[c, amount]: word_l_count) {
-        if (string_count(word, c) <= amount) { return false; }
       }
       
-      for (int ind{}; ind < Word_len; ind++) {
-        if (index_is.count(ind)) {
-          if (index_is.at(ind) != word[ind]) { return false; }
-        }
-        if (index_is_not.count(ind)) {
-          if (index_is_not.at(ind) == word[ind]) { return false; }
-        }
+      for (const auto&[letter, amount]: lett_count) {
+        word_l_count[letter] = std::max(word_l_count[letter], amount);
+      }
+    }
+    std::unordered_set<char> to_erase;
+    for (const char& letter: word_not_has) {
+      if (has_key(word_l_count, letter)) {
+        to_erase.insert(letter);
+      }
+    }
+    for (const char& letter: to_erase) { word_not_has.erase(letter); }
+
+    return filter_f(inp_stream, [
+      &index_is,
+      &index_is_not,
+      &word_l_count,
+      &word_not_has](std::string word){
+      word = word.substr(0, Word_len);
+      
+      for (const auto&[ind, letter]: index_is) {
+        if (word[ind] == letter) { continue; }
+        else { return false; }
       }
 
-      for (const char& c: word_not_has) {
-        if (string_count(word, c)) { return false; }
+      for (const auto&[ind, not_letters]: index_is_not) {
+        if (has_value(not_letters, word[ind])) { return false; }
+      }
+
+      for (const char& letter: word_not_has) {
+        if (string_count(word, letter)) { return false; }
+      }
+
+      for (const auto&[letter, amount]: word_l_count) {
+        if (string_count(word, letter) < amount) { return false; }
       }
       
       return true;
-    });
+    }); 
+    
   }
 
   bool is_full() {
@@ -298,27 +319,78 @@ template <int word_len, int guesses = 6> bool play_game(std::ifstream& inp_strea
     std::cout << "guess a word: ";
     std::string guess;
     std::getline(std::cin, guess);
-    //if (guess[0] == '.') {
-      //std::cout << game.possibilites(inp_stream);
-    //}
     game.guess_word(guess);
     std::cout << game;
   }
 }
 
+
+
+template <int word_len, typename T>
+void iter_accuracy_possibilites(T& fn, std::array<int, word_len> combonation, int iter_number = word_len) {
+  if (iter_number == 0) {
+    fn(combonation);
+  } else {
+    for (int i{}; i < 3; i++) {
+      combonation[iter_number - 1] = i;
+      iter_accuracy_possibilites<word_len>(fn, combonation, iter_number - 1);
+    }
+  }
+}
+
+/*
+  fn should be formatted as fn(combonation, *args)
+*/
+
+template <int w_len> float information_eval(std::string guess, Wordle_game<w_len>& W_game) {
+  float information{};
+  int total_possibilites{};
+  std::array<int, w_len> cmb;
+  map_set<std::pair<std::array<int, w_len>, int>> acc_arr_to_combonations;
+  
+  auto set_inf{[W_game, &guess, &total_possibilites](std::array<int, w_len> p_acc_arr){
+    W_game.guess_word(W_word<w_len>(p_acc_arr, guess));
+    int possibilites{W_game.size()};
+    total_possibilites += possibilites;
+    acc_arr_to_combonations.append(std::pair<std::array<int, w_len>, int>(p_acc_arr, possibilites));
+  }};
+
+  
+}
+
 int main() {
-  Wordle_game<5> some_game("paint");
+  std::string file_name;
+
+  //std::getline(std::cin, file_name);
+  
   std::ifstream word_file{"5lw.txt"};
-
-  W_word<5> a_w_w("genes", "grains");
-
-  std::cout << filter_f(word_file, [](std::string word){
-    return word[0] == word[2];
-  }) << '\n';
   
-  /*bool res{play_game<5>(word_file, std::string("crate"))};
+  Wordle_game<5> some_game("about");
+  some_game.guess_word("write");
+  some_game.guess_word("crate");
+  some_game.guess_word("total");
+  some_game.guess_word("maths");
+  //some_game.guess_word("aroud");
+
+  //std::cout << some_game << "\n\n";
+
+  std::unordered_set<std::string> pos{some_game.possibilites(word_file)};
   
-  if (res) { std::cout << "you won!\n"; }
-  else { std::cout << "you did not win\n"; }*/
-  std::cout << "\ncode_compiiled!\n";
+  //for (const std::string& word: pos) {
+   // std::cout << word << '\n';
+  //}
+
+  //std::cout << has_value(pos, std::string("about")) << '\n';
+
+  //std::cout << w_word_io<5>();
+  auto fx{[](std::array<int, 5> arr){
+    for (const int& val: arr) {
+      std::cout << val << ' ';
+    }
+    std::cout << '\n';
+  }};
+
+  std::array<int, 5> c;
+  iter_accuracy_possibilites<5>(fx, c);
+  return 0;
 }
