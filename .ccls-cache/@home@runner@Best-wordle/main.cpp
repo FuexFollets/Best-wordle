@@ -52,6 +52,13 @@ template <typename T> std::unordered_set<std::string> filter_f(std::ifstream& in
   return filtered;
 }
 
+template <typename T> void iter_file_by_line(std::ifstream& inp_stream, T fn) {
+  std::string temp;
+  while (std::getline(inp_stream, temp)) {
+    fn(temp);
+  }
+}
+
 bool valid_word(std::ifstream& word_file, std::string tested_word) {
   std::string temp;
   while (std::getline(word_file, temp)) {
@@ -342,20 +349,38 @@ void iter_accuracy_possibilites(T& fn, std::array<int, word_len> combonation, in
   fn should be formatted as fn(combonation, *args)
 */
 
-template <int w_len> float information_eval(std::string guess, Wordle_game<w_len>& W_game) {
+template <int w_len> float information_eval(std::string guess, Wordle_game<w_len>& W_game, std::ifstream& word_file) {
   float information{};
   int total_possibilites{};
   std::array<int, w_len> cmb;
   map_set<std::pair<std::array<int, w_len>, int>> acc_arr_to_combonations;
   
-  auto set_inf{[W_game, &guess, &total_possibilites](std::array<int, w_len> p_acc_arr){
+  auto set_inf{[W_game, &guess, &total_possibilites, &acc_arr_to_combonations, &word_file](std::array<int, w_len> p_acc_arr){
     W_game.guess_word(W_word<w_len>(p_acc_arr, guess));
-    int possibilites{W_game.size()};
+    int possibilites{W_game.possibilites(word_file)};
     total_possibilites += possibilites;
     acc_arr_to_combonations.append(std::pair<std::array<int, w_len>, int>(p_acc_arr, possibilites));
   }};
 
+  iter_accuracy_possibilites<w_len>(set_inf, cmb);
   
+  for (const auto&[_, pair_obj]: acc_arr_to_combonations) {
+    auto&[acc_arr, combonations] = pair_obj;
+    float prob{static_cast<float>(combonations) / static_cast<float>(total_possibilites)};
+    information += prob + std::log2(prob);
+  }
+  
+  return -information;
+}
+
+template <int w_len, int guesses = 6> std::map<float, std::string> w_game_eval(Wordle_game<w_len, guesses> w_game, std::ifstream& word_file) {
+  std::map<float, std::string> eval_to_word;
+  iter_file_by_line(word_file, [&eval_to_word, &w_game, &word_file](std::string word){
+    word = word.substr(0, w_len);
+    eval_to_word.emplace(information_eval(word, w_game, word_file), word);
+  });
+  
+  return eval_to_word;
 }
 
 int main() {
@@ -376,13 +401,6 @@ int main() {
 
   std::unordered_set<std::string> pos{some_game.possibilites(word_file)};
   
-  //for (const std::string& word: pos) {
-   // std::cout << word << '\n';
-  //}
-
-  //std::cout << has_value(pos, std::string("about")) << '\n';
-
-  //std::cout << w_word_io<5>();
   auto fx{[](std::array<int, 5> arr){
     for (const int& val: arr) {
       std::cout << val << ' ';
@@ -391,6 +409,6 @@ int main() {
   }};
 
   std::array<int, 5> c;
-  iter_accuracy_possibilites<5>(fx, c);
+  //iter_accuracy_possibilites<5>(fx, c);
   return 0;
 }
