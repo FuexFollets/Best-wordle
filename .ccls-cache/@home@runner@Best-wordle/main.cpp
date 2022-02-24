@@ -383,32 +383,25 @@ template <int w_len, int guesses = 6> std::map<float, std::string> w_game_eval(W
   return eval_to_word;
 }
 
-int main() {
-  std::string file_name;
-
-  //std::getline(std::cin, file_name);
-  
-  std::ifstream word_file{"5lw.txt"};
-  
-  Wordle_game<5> some_game("about");
-  some_game.guess_word("write");
-  some_game.guess_word("crate");
-  some_game.guess_word("total");
-  some_game.guess_word("maths");
-  //some_game.guess_word("aroud");
-
-  //std::cout << some_game << "\n\n";
-
-  std::unordered_set<std::string> pos{some_game.possibilites(word_file)};
-  
-  auto fx{[](std::array<int, 5> arr){
-    for (const int& val: arr) {
-      std::cout << val << ' ';
+template <int len, int guesses = 6> void solve_game_io(std::ifstream& word_file) {
+  Wordle_game<len, guesses> evaluated_game("");
+  while (1) {
+    std::map<float, std::string> word_eval{w_game_eval<len, guesses>(evaluated_game, word_file)};
+    int iter_times{std::min(10, static_cast<int>(word_eval.size()))};
+    auto itr{word_eval.end()};
+    for (int i{}; i < iter_times; i++) {
+      auto&[ev, word]{*(--itr)};
+      std::cout << word << ' ' << ev << '\n';
     }
-    std::cout << '\n';
-  }};
+    W_word<len> acc_guess{w_word_io<len, guesses>()};
+    evaluated_game.guess_word(acc_guess);
+  }
+}
 
-  std::array<int, 5> c;
-  //iter_accuracy_possibilites<5>(fx, c);
+int main() {
+  std::ifstream word_file{"5lw.txt"};
+
+  solve_game_io<5>(word_file);
+
   return 0;
 }
