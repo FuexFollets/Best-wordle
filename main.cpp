@@ -1,7 +1,8 @@
 #include <bits/stdc++.h>
-
-constexpr std::array<char*, 3> accuracy_boxes{"🟩", "🟧", "⬛"};
-
+#include "wordle_objects.hpp"
+#include "evaluation.hpp"
+////
+/*
 template <typename T> class map_set {
   int appen{0};
   public:
@@ -116,7 +117,7 @@ std::array<std::string, 2> without(std::string s1, std::string s2) {
 //
 // Wordle Structre Elements
 //
-
+/*
 struct W_letter {
   W_letter(char lett, uint8_t acc) : letter(lett), accuracy(acc) {}
   W_letter () {}
@@ -124,7 +125,7 @@ struct W_letter {
   uint8_t accuracy{2};
 
   friend std::ostream& operator<< (std::ostream& out, W_letter wl) {
-    out << '[' << (char)wl.letter << accuracy_boxes[(int)wl.accuracy] /*<< (int)wl.accuracy*/ << ']';
+    out << '[' << (char)wl.letter << accuracy_boxes[(int)wl.accuracy] /*<< (int)wl.accuracy << ']';
     return out;
   }
 };
@@ -195,17 +196,17 @@ template <int len> struct W_word {
 };
 
 template <int w_len> W_word<w_len> w_word_io() {
-    std::string inp;
-    std::array<int, w_len> acc_arr;
-    std::cout << "Input W_word as <word string><integer accuracies>: ";
-    std::getline(std::cin, inp);
-    std::string word_str{inp.substr(0, w_len)};
-    for (int ind{}; ind < w_len; ind++) {
-      acc_arr[ind] = inp[w_len + ind] - '0';
-    }
-    return W_word<w_len>(word_str, acc_arr);
+  std::string inp;
+  std::array<int, w_len> acc_arr;
+  std::cout << "Input W_word as <word string><integer accuracies>: ";
+  std::getline(std::cin, inp);
+  std::string word_str{inp.substr(0, w_len)};
+  for (int ind{}; ind < w_len; ind++) {
+    acc_arr[ind] = inp[w_len + ind] - '0';
   }
-
+  return W_word<w_len>(word_str, acc_arr);
+}
+/*
 template <int Word_len, int Guesses = 6> class Wordle_game {
   
   std::string _solution;
@@ -333,7 +334,7 @@ template <int word_len, int guesses = 6> bool play_game(std::ifstream& inp_strea
   }
 }
 
-
+/*
 template <int word_len, typename T>
 void iter_accuracy_possibilities(T& fn, std::array<int, word_len> combonation, int iter_number = word_len) {
   if (iter_number == 0) {
@@ -348,7 +349,7 @@ void iter_accuracy_possibilities(T& fn, std::array<int, word_len> combonation, i
 
 /*
   fn should be formatted as fn(combonation, *args)
-*/
+
 
 template <int w_len> float information_eval(std::string guess, Wordle_game<w_len>& W_game, std::ifstream& word_file) {
   float information{};
@@ -356,10 +357,16 @@ template <int w_len> float information_eval(std::string guess, Wordle_game<w_len
   std::array<int, w_len> cmb;
   map_set<std::pair<std::array<int, w_len>, int>> acc_arr_to_combonations;
   
-  auto set_inf{[&W_game, &guess, &total_possibilities, &acc_arr_to_combonations, &word_file](std::array<int, w_len> p_acc_arr){
+  auto set_inf{[
+  &W_game, 
+  &guess, 
+  &total_possibilities, 
+  &acc_arr_to_combonations, 
+  &word_file
+  ](std::array<int, w_len> p_acc_arr){
     auto w_game_cpy{W_game};
     w_game_cpy.append_w_word(W_word<w_len>(guess, p_acc_arr));
-    int possibilities{w_game_cpy.possibilities(word_file).size()};
+    int possibilities{static_cast<int>(w_game_cpy.possibilities(word_file).size())};
     total_possibilities += possibilities;
     acc_arr_to_combonations.append(std::pair<std::array<int, w_len>, int>(p_acc_arr, possibilities));
   }};
@@ -402,11 +409,28 @@ template <int len, int guesses = 6> void solve_game_io(std::ifstream& word_file)
     evaluated_game.append_w_word(acc_guess);
   }
 }
+*/
+//
 
 int main() {
   std::ifstream word_file{"5lw.txt"};
 
-  solve_game_io<5>(word_file);
+  Wordle_game<5> wg("zzzzz");
 
+  std::array<int, 5> arr{2, 2, 1, 2, 1};
+
+  wg.append_w_word(W_word<5>(std::string("crate"), arr));
+  auto p{wg.possibilities(word_file)};
+
+  for (const std::string& wrd: p) {
+    std::cout << wrd << '\n';
+  }
+  //float infor{information_eval<5>("crate", wg, word_file)};
+  
+  //std::cout << infor << '\n';
+
+  
+  
+  std::cout << '\n' << "Code compilied" << '\n';  
   return 0;
 }

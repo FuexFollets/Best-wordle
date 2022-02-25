@@ -3,6 +3,8 @@ run = "./main"
 entrypoint = "main.cpp"
 hidden = ["main", "**/*.o", ".ccls-cache", "Makefile"]
 
+modify = ["wordle_objects.hpp", "primitives.hpp", "evaluation.hpp"]
+
 [languages.cpp]
 pattern = "**/*.{cpp,h}"
 
