@@ -90,10 +90,6 @@ public:
   std::array<W_word<Word_len>, Guesses> word_container;
   Wordle_game(std::string solution) : _solution(solution) {}
 
-  static Wordle_game<Word_len> blank_g() {
-    return Wordle_game<Word_len>("");
-  }
-
   void guess_word(std::string word) {
     if (appended == Guesses) { return; }
     word_container[appended++] = W_word<Word_len>(word, _solution);

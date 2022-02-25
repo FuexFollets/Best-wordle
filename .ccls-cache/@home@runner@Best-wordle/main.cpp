@@ -1,7 +1,8 @@
 #include <bits/stdc++.h>
 #include "wordle_objects.hpp"
 #include "evaluation.hpp"
-////
+
+//
 /*
 template <typename T> class map_set {
   int appen{0};
@@ -412,18 +413,44 @@ template <int len, int guesses = 6> void solve_game_io(std::ifstream& word_file)
 */
 //
 
+int get_l(std::ifstream& wf) {
+  int res{[&wf]{
+    unsigned long tw{filter_f(wf, [](std::string _){ return true; }).size()};
+    return tw;
+  }()};
+  return res;
+}
+
 int main() {
-  std::ifstream word_file{"5lw.txt"};
+  std::ifstream word_container_file{"5lw.txt"};
 
   Wordle_game<5> wg("zzzzz");
+  
+/*/////
+  std::array<int, 5> arr{2, 2, 1, 2, 1};
 
-  wg.append_word();
-  //float infor{information_eval<5>("crate", wg, word_file)};
-  
-  //std::cout << infor << '\n';
+  wg.append_w_word(W_word<5>(std::string("crate"), arr));
+  auto p{wg.possibilities(word_file)};
 
+  for (const std::string& wrd: p) {
+    std::cout << wrd << '\n';
+  }
+
+  std::cout << '\n' << p.size();
+*///
   
+  float infor{information_eval<5>(word_container_file, "crate", wg)};
   
+  std::cout << infor << '\n';
+/*
+  [&word_file]{
+    unsigned long tw{filter_f(word_file, [](std::string _){ return true; }).size()};
+
+    std::cout << tw;
+  }();/////
+ */ 
+
+  //std::cout << get_l(word_file);
   std::cout << '\n' << "Code compilied" << '\n';  
   return 0;
 }
