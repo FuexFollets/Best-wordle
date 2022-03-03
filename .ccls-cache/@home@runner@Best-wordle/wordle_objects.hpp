@@ -1,4 +1,3 @@
-#include <bits/stdc++.h>
 #include "primitives.hpp"
 
 constexpr std::array<char*, 3> accuracy_boxes{"🟩", "🟧", "⬛"};
@@ -10,14 +9,10 @@ struct W_letter {
   uint8_t accuracy{2};
 
   friend std::ostream& operator<< (std::ostream& out, W_letter wl) {
-    out << '[' << (char)wl.letter << accuracy_boxes[(int)wl.accuracy] /*<< (int)wl.accuracy*/ << ']';
+    out << '[' << (char)wl.letter << accuracy_boxes[(int)wl.accuracy] << ']';
     return out;
   }
 };
-
-bool string_count(std::string str, char c) {
-  return std::count(str.begin(), str.end(), c);
-}
 
 template <int len> struct W_word {
   std::string as_std_str;
@@ -102,13 +97,13 @@ public:
     solved = solved || word_container[appended].solved;
   }
 
-
-  std::unordered_set<std::string> possibilities(std::ifstream& inp_stream) {
+  std::unordered_set<std::string> possibilities(std::unordered_set<std::string>& inp_words) {
     std::unordered_map<int, char> index_is;
     std::unordered_map<int, std::unordered_set<char>> index_is_not;
     std::unordered_set<char> word_not_has;
     std::unordered_map<char, int> word_l_count;
-    
+    std::unordered_set<std::string> possible_words;
+
     int iteration_number{0};
     for (const W_word<Word_len>& word: word_container) {
       std::unordered_map<char, int> lett_count;
@@ -146,33 +141,31 @@ public:
     }
     for (const char& letter: to_erase) { word_not_has.erase(letter); }
 
-    return filter_f(inp_stream, [
-      &index_is,
-      &index_is_not,
-      &word_l_count,
-      &word_not_has](std::string word){
-      word = word.substr(0, Word_len);
+    
+    for (const std::string& word: inp_words) { [&]{
       
       for (const auto&[ind, letter]: index_is) {
         if (word[ind] == letter) { continue; }
-        else { return false; }
+        else { return; }
       }
 
       for (const auto&[ind, not_letters]: index_is_not) {
-        if (has_value(not_letters, word[ind])) { return false; }
+        if (has_value(not_letters, word[ind])) { return; }
       }
 
       for (const char& letter: word_not_has) {
-        if (string_count(word, letter)) { return false; }
+        if (string_count(word, letter)) { return; }
       }
 
       for (const auto&[letter, amount]: word_l_count) {
-        if (string_count(word, letter) < amount) { return false; }
+        if (string_count(word, letter) < amount) { return; }
       }
       
-      return true;
-    }); 
-    
+      possible_words.insert(word);
+    }(); 
+    }
+
+    return possible_words;
   }
 
   bool is_full() {
@@ -202,3 +195,4 @@ template <int w_len> W_word<w_len> w_word_io() {
   }
   return W_word<w_len>(word_str, acc_arr);
 }
+
