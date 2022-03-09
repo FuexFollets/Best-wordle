@@ -1,6 +1,6 @@
 #include "wordle_objects.hpp"
 
-template <int word_len, typename T> void iter_accuracy_possibilities(T fn, std::array<int, word_len> combonation, int iter_number = word_len) {
+template <int word_len, typename T> void iter_accuracy_possibilities(T& fn, std::array<int, word_len> combonation, int iter_number = word_len) {
   if (iter_number == 0) {
     fn(combonation);
   } else {
@@ -11,36 +11,42 @@ template <int word_len, typename T> void iter_accuracy_possibilities(T fn, std::
   }
 }
 
-template <int w_len> float information_eval(std::unordered_set<std::string>& possible_words, std::string guess, Wordle_game<w_len>& wr_game) {
-  int total_possibilities;
+template <int w_len> float information_eval(std::string guess, const word_set& possible_words) {
+  unsigned long total_possibilities;
   float eval;
   std::unordered_set<int> individual_possibilities;
   std::array<int, w_len> cmb;
   
-  iter_accuracy_possibilities<w_len>([
+  int times_called{};
+  auto evf{[
     &guess,
-    &wr_game,
     &possible_words,
     &total_possibilities,
-    &individual_possibilities
+    &individual_possibilities,
+    &times_called
   ](std::array<int, w_len> acc_arr){
-    
-    Wordle_game<w_len> w_game_cpy{wr_game};
-    W_word<w_len> new_word(guess, acc_arr);
-    w_game_cpy.append_w_word(new_word);
+    W_word<w_len> ww_with_acc(guess, acc_arr);
+    word_set possibilities{ww_with_acc.possibilities(possible_words)};
+    unsigned long possibilities_amount{possibilities.size()};
+    total_possibilities += possibilities_amount;
+    individual_possibilities.insert(possibilities_amount);
+  }};
 
-    int possibilities{w_game_cpy.possibilities().size()};
+  iter_accuracy_possibilities<w_len>(evf, cmb);
 
-    total_possibilities += possibilities;
-    individual_possibilities.insert(possibilities);
-  }, cmb);
-
-  
+  int iter_n{};
   float tp_as_float{static_cast<float>(total_possibilities)};
+  
   for (const int& val: individual_possibilities) {
-    float prob{static_cast<float>(val)/tp_as_float};
-
-    eval -= prob * std::log2(prob);
+    if (val) {
+      float prob{static_cast<float>(val) / tp_as_float};
+      std::cout << (int)(iter_n++) << "| " << val << "| " << prob << " : ";
+  
+      eval -= prob * std::log2(prob);
+      std::cout << eval << '\n';
+    } else {
+    
+    }
   }
 
   return eval;

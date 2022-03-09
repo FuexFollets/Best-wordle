@@ -51,11 +51,65 @@ template <int len> struct W_word {
     }
 
     for (const W_letter& wl: w_letter_arr) {
-      solved = solved && !wl.accuracy;
+      solved = solved && (!wl.accuracy);
+    }
+  }
+    
+
+  word_set possibilities(const word_set& inp_words) {
+    word_set possible_words;
+    std::unordered_map<int, char> index_is;
+    std::unordered_map<int, char> index_is_not;
+    std::unordered_set<char> word_not_has;
+    std::unordered_map<char, int> word_l_count;
+
+    int w_index{};
+    for (const W_letter& wl: w_letter_arr) {
+      switch (wl.accuracy) {
+        case 0:
+          index_is[w_index] = wl.letter;
+          word_l_count[wl.letter]++;
+          break;
+        case 1:
+          index_is_not[w_index] = wl.letter;
+          word_l_count[wl.letter]++;
+          break;
+        case 2:
+          word_not_has.insert(wl.letter);
+      }
+      w_index++;
     }
 
+    for (const auto&[lett, _]: word_l_count) {
+      word_not_has.erase(lett);
+    }
     
+    for (const std::string& word: inp_words) { [&]{
+
+      for (int index{}; index < len; index++) {
+        char letter_{word[index]};
+
+        if (has_key(index_is, index)) {
+          if (index_is.at(index) != letter_) { return; }
+        }
+
+        if (has_key(index_is_not, index)) {
+          if (index_is_not.at(index) == letter_) { return; }
+        }
+
+        if (has_value(word_not_has, letter_)) { return; }
+      }
+
+    for (const auto&[required, amount]: word_l_count) {
+      if (string_count(word, required) < amount) { return; }
+    }
+    
+    possible_words.insert(word);
+  }(); 
   }
+
+  return possible_words;
+}
 
   W_word(std::string word_as_str, std::array<int, len> acc_arr) : as_std_str(word_as_str) {
     int ind{};
@@ -73,6 +127,8 @@ template <int len> struct W_word {
     }
     return out;
   }
+
+  
 };
 
 template <int Word_len, int Guesses = 6> class Wordle_game {
@@ -97,12 +153,12 @@ public:
     solved = solved || word_container[appended].solved;
   }
 
-  std::unordered_set<std::string> possibilities(std::unordered_set<std::string>& inp_words) {
+  word_set possibilities(word_set& inp_words) {
     std::unordered_map<int, char> index_is;
     std::unordered_map<int, std::unordered_set<char>> index_is_not;
     std::unordered_set<char> word_not_has;
     std::unordered_map<char, int> word_l_count;
-    std::unordered_set<std::string> possible_words;
+    word_set possible_words;
 
     int iteration_number{0};
     for (const W_word<Word_len>& word: word_container) {

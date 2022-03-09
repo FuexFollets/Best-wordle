@@ -1,5 +1,7 @@
 #include <bits/stdc++.h>
 
+typedef std::unordered_set<std::string> word_set;
+
 bool string_count(std::string str, char c) {
   return std::count(str.begin(), str.end(), c);
 }
@@ -25,8 +27,8 @@ std::string common(std::string s1, std::string s2) {
   return common_chars;
 }
 
-template <int len> std::unordered_set<std::string> words_from_file(std::ifstream& inp_filestream) {
-  std::unordered_set<std::string> word_collection;
+template <int len> word_set words_from_file(std::ifstream& inp_filestream) {
+  word_set word_collection;
   std::string temp;
 
   while (std::getline(inp_filestream, temp)) word_collection.insert(temp);
@@ -34,4 +36,18 @@ template <int len> std::unordered_set<std::string> words_from_file(std::ifstream
   return word_collection;
 }
 
-bool valid_word(std::string word, std::unordered_set<std::string>& avalible_words) { return has_value(avalible_words, word); }
+bool valid_word(std::string word, word_set& avalible_words) { return has_value(avalible_words, word); }
+
+template <typename K, typename V> std::ostream& operator<< (std::ostream& out, std::unordered_map<K, V> m) {
+  out << "{ ";
+  for (const auto&[key, value]: m) out << key << " : " << value << ", ";
+  out << "}";
+  return out;
+}
+
+template <typename T> std::ostream& operator<< (std::ostream& out, std::unordered_set<T> s) {
+  out << "{ ";
+  for (const T& val: s) out << val << ", ";
+  out << "}";
+  return out;
+}

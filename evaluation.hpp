@@ -1,6 +1,6 @@
 #include "wordle_objects.hpp"
 
-template <int word_len, typename T> void iter_accuracy_possibilities(T fn, std::array<int, word_len> combonation, int iter_number = word_len) {
+template <int word_len, typename T> void iter_accuracy_possibilities(T& fn, std::array<int, word_len> combonation, int iter_number = word_len) {
   if (iter_number == 0) {
     fn(combonation);
   } else {
@@ -11,64 +11,85 @@ template <int word_len, typename T> void iter_accuracy_possibilities(T fn, std::
   }
 }
 
-template <int w_len> float information_eval(std::unordered_set<std::string>& possible_words, std::string guess, Wordle_game<w_len>& wr_game) {
-  int total_possibilities;
+template <int w_len> float information_eval(std::string guess, const word_set& possible_words) {
+  unsigned long total_possibilities;
   float eval;
-  std::unordered_set<int> individual_possibilities;
+  std::unordered_set<unsigned long> individual_possibilities;
   std::array<int, w_len> cmb;
   
-  iter_accuracy_possibilities<w_len>([
+  int times_called{};
+  auto evf{[
     &guess,
-    &wr_game,
     &possible_words,
     &total_possibilities,
-    &individual_possibilities
+    &individual_possibilities,
+    &times_called
   ](std::array<int, w_len> acc_arr){
-    
-    Wordle_game<w_len> w_game_cpy{wr_game};
-    W_word<w_len> new_word(guess, acc_arr);
-    w_game_cpy.append_w_word(new_word);
+    W_word<w_len> ww_with_acc(guess, acc_arr);
+    word_set possibilities{ww_with_acc.possibilities(possible_words)};
+    unsigned long possibilities_amount{possibilities.size()};
+    total_possibilities += possibilities_amount;
+    individual_possibilities.insert(possibilities_amount);
+  }};
 
-    int possibilities{w_game_cpy.possibilities().size()};
+  iter_accuracy_possibilities<w_len>(evf, cmb);
 
-    total_possibilities += possibilities;
-    individual_possibilities.insert(possibilities);
-  }, cmb);
-
-  
+  unsigned long iter_n{};
   float tp_as_float{static_cast<float>(total_possibilities)};
-  for (const int& val: individual_possibilities) {
-    float prob{static_cast<float>(val)/tp_as_float};
-
-    eval -= prob * std::log2(prob);
+  
+  for (const unsigned long& val: individual_possibilities) {
+    if (val) {
+      float prob{static_cast<float>(val) / tp_as_float};
+      std::cout << (int)(iter_n++) << "| " << val << "| " << prob << '\n';
+  
+      eval -= prob * std::log2(prob);
+      //std::cout << eval << '\n';
+    }
   }
-
   return eval;
 }
 
-template <int w_len, int guesses = 6> std::map<float, std::string> w_game_eval(const Wordle_game<w_len, guesses>& w_game, const std::unordered_set<std::string>& possible_words) {
-  std::map<float, std::string> eval_to_word;
-  for (const std::string& word: possible_words) {
-    float eval{information_eval<w_len>(possible_words, word, w_game)};
-    eval_to_word.emplace(eval, word);
+template <int w_len> std::map<int32_t, std::string> ww_all_eval(const std::unordered_set<std::string>& possible_words, unsigned long* progress = nullptr) {
+  std::map<int32_t, std::string> eval_to_word;
+  const unsigned long total_words{possible_words.size()};
+  unsigned long calculated{};
+
+  if (!(bool)progress) {
+    for (const std::string& word: possible_words) {
+      int32_t info{static_cast<int32_t>(information_eval<w_len>(word, possible_words))};
+      eval_to_word.emplace(word, info);
+      *progress = ++calculated;
+    }
+  } else { 
+    for (const std::string& word: possible_words) {
+      int32_t info{static_cast<int32_t>(information_eval<w_len>(word, possible_words))};
+      eval_to_word.emplace(word, info);
+    }
   }
   return eval_to_word;
 }
 
-template <int len, int guesses = 6> void solve_game_io(const std::unordered_set<std::string>& avalible_words) {
-  Wordle_game<len, guesses> evaluated_game("");
+template <int len, int guesses = 6> void solve_game_io(const word_set& avalible_words) {
+  Wordle_game<len, guesses> displayed("");
+  std::array<word_set, guesses> updated_av_words;
+  updated_av_words[0] = avalible_words;
+  int avw_int{};
+  
   while (1) {
-    std::map<float, std::string> word_eval{w_game_eval<len, guesses>(evaluated_game, avalible_words)};
-    int iter_times{std::min(5, static_cast<int>(word_eval.size()))};
-    auto itr{word_eval.end()};
-    std::cout << iter_times << '\n';
+    std::map<int32_t, std::string> words_eval{ww_all_eval<len>(updated_av_words[avw_int])};
+    int iter_times{std::min(words_eval.size(), (unsigned long)5)};
+    auto itr{words_eval.end()};
     
     for (int i{}; i < iter_times; i++) {
       auto&[ev, word]{*(--itr)};
-      std::cout << word << ' ' << ev << '\n';
+      std::cout << word << " | " << ev << '\n';
     }
-    
-    W_word<len> acc_guess{w_word_io<len>()};
-    evaluated_game.append_w_word(acc_guess);
+
+    std::cout << displayed;
+    W_word<len> res{w_word_io<len>()};
+
+    displayed.append_w_word(res);
+    updated_av_words[avw_int + 1] = res.possibilities(updated_av_words[avw_int]);
+    avw_int++;
   }
 }
