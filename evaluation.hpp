@@ -11,10 +11,10 @@ template <int word_len, typename T> void iter_accuracy_possibilities(T& fn, std:
   }
 }
 
-template <int w_len> float information_eval(std::string guess, const word_set& possible_words) {
-  unsigned long total_possibilities;
+template <int w_len> float information_eval(const std::string guess, const word_set& possible_words) {
+  size_t total_possibilities;
   float eval;
-  std::unordered_set<unsigned long> individual_possibilities;
+  std::unordered_set<size_t> individual_possibilities;
   std::array<int, w_len> cmb;
   
   int times_called{};
@@ -27,7 +27,7 @@ template <int w_len> float information_eval(std::string guess, const word_set& p
   ](std::array<int, w_len> acc_arr){
     W_word<w_len> ww_with_acc(guess, acc_arr);
     word_set possibilities{ww_with_acc.possibilities(possible_words)};
-    unsigned long possibilities_amount{possibilities.size()};
+    size_t possibilities_amount{possibilities.size()};
     total_possibilities += possibilities_amount;
     individual_possibilities.insert(possibilities_amount);
   }};
@@ -49,22 +49,12 @@ template <int w_len> float information_eval(std::string guess, const word_set& p
   return eval;
 }
 
-template <int w_len> std::map<int32_t, std::string> ww_all_eval(const std::unordered_set<std::string>& possible_words, unsigned long* progress = nullptr) {
-  std::map<int32_t, std::string> eval_to_word;
-  const unsigned long total_words{possible_words.size()};
-  unsigned long calculated{};
-
-  if (!(bool)progress) {
-    for (const std::string& word: possible_words) {
-      int32_t info{static_cast<int32_t>(information_eval<w_len>(word, possible_words))};
-      eval_to_word.emplace(word, info);
-      *progress = ++calculated;
-    }
-  } else { 
-    for (const std::string& word: possible_words) {
-      int32_t info{static_cast<int32_t>(information_eval<w_len>(word, possible_words))};
-      eval_to_word.emplace(word, info);
-    }
+template <int w_len> std::map<float, std::string> ww_all_eval(const word_set& possible_words, unsigned long* progress = nullptr) {
+  std::map<float, std::string> eval_to_word;
+  for (const std::string& word: possible_words) {
+    float w_eval{information_eval<w_len>(word, possible_words)};
+    std::cout << "Evaluated " << word << " to " << w_eval << std::endl;
+    eval_to_word.emplace(w_eval, word);
   }
   return eval_to_word;
 }
@@ -76,7 +66,7 @@ template <int len, int guesses = 6> void solve_game_io(const word_set& avalible_
   int avw_int{};
   
   while (1) {
-    std::map<int32_t, std::string> words_eval{ww_all_eval<len>(updated_av_words[avw_int])};
+    std::map<float, std::string> words_eval{ww_all_eval<len>(updated_av_words[avw_int])};
     int iter_times{std::min(words_eval.size(), (unsigned long)5)};
     auto itr{words_eval.end()};
     
